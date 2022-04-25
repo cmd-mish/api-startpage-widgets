@@ -17,36 +17,48 @@
 
 <body>
     
-    <div class="container m-3">
+    <div class="container-fluid">
         <h1>Min startsida</h1>
         <div class="row">
-            <div class="col">
-                <div class="card m-2 mx-left">
+            <div class="col-md-5">
+
+                <div class="card text-dark bg-light mb-3" style="max-width: max-content">
+                    <h5 class="card-header">Din IP-adress</h5>
                     <div class="card-body">
-                        <h5 class="card-title">Din IP-adress</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Källa: <a href="https://ipapi.co">ipapi</a></h6>
                         <div class="card-text" id="ip-info"></div>
                     </div>
                 </div>
                 
-                <div class="card m-2 mx-left">
+                <div class="card text-dark bg-light mb-3" style="max-width: max-content">
+                    <h5 class="card-header">Weather in <span id="weather-city"></span></h5>
                     <div class="card-body">
-                        <h5 class="card-title">Weather in <span id="weather-city"></span></h5>
-                        <div>
-                            <span id="weather-pic"></span><span class="card-text" id="weather-info"></span>
+                        <h6 class="card-subtitle mb-2 text-muted">Källa: <a href="https://openweathermap.org">OpenWeatherMap</a></h6>
+                        <div class="card-text">
+                            <span id="weather-pic"></span><span id="weather-info"></span>
                         </div>
                     </div>
                 </div>
 
-                <div class="card m-2 mx-left">
+                <div class="card text-dark bg-light mb-3" style="max-width: max-content">
+                    <h5 class="card-header">Valuta</h5>
                     <div class="card-body">
-                        <h5 class="card-title">Valuta</h5>
-                        <div class="card-text" id="currency-info">
+                        <h6 class="card-subtitle mb-2 text-muted">Källa: <a href="https://exchangerate.host">exchangerate.host</a></h6>
+                        <div class="card-text" id="currency-info"></div>
+                    </div>
+                </div>
 
+                <div class="card text-dark bg-light mb-3" style="max-width: max-content"> 
+                    <h5 class="card-header">Random bild från en vägkamera</h5>
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Källa: <a href="https://www.fintraffic.fi/sv">Fintraffic</a></h6>
+                        <div class="card-text text-center"><span  id="camera-picture"></span>
+                            <a href="#" class="btn btn-outline-primary m-2" id="refresh-picture">Nästa</a>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col">
+            <div class="col-md-auto">
                 To-Do
             </div>
         </div>

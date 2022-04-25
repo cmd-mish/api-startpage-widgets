@@ -27,7 +27,6 @@ async function getCityInfo() {
 
 
 async function getWeatherInfo(city) {
-    
     const URL = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${config.weather_key}&units=metric`
     const resp = await fetch(URL)
     const data = await resp.json()
@@ -40,7 +39,6 @@ async function getCurrencyInfo() {
     const URL = `https://api.exchangerate.host/latest`
     const resp = await fetch(URL)
     const data = await resp.json()
-    console.log(data)
 
     let currency_html = `1 &euro; = ${data.rates.SEK.toFixed(2)} SEK<br>
                          1 &euro; = ${data.rates.USD.toFixed(2)} &#36;<br>
@@ -49,6 +47,22 @@ async function getCurrencyInfo() {
     document.querySelector("#currency-info").innerHTML = currency_html
 }
 
+async function getCameraPicture() {
+    const URL = "https://tie.digitraffic.fi/api/v1/data/camera-data"
+    const resp = await fetch(URL)
+    const data = await resp.json()
+
+    const cameraN = Math.floor(Math.random() * data.cameraStations.length)
+    const cameraP = Math.floor(Math.random() * data.cameraStations[cameraN].cameraPresets.length)
+    const pic_url = data.cameraStations[cameraN].cameraPresets[cameraP].imageUrl
+    
+    let camera_html = `<img src="${pic_url}" class="img-fluid" alt="Vägbild">`
+    document.querySelector("#camera-picture").innerHTML = camera_html
+}
+
 getIpInfo()
 getCityInfo().then(city => getWeatherInfo(city))
 getCurrencyInfo()
+getCameraPicture()
+
+document.querySelector("#refresh-picture").addEventListener("click", getCameraPicture)
