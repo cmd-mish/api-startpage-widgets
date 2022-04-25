@@ -60,9 +60,31 @@ async function getCameraPicture() {
     document.querySelector("#camera-picture").innerHTML = camera_html
 }
 
+function initiateSettings() {
+    const widgetKey = localStorage.getItem("widgetKey")
+    const toDoKey = localStorage.getItem("toDoKey")
+    if (widgetKey != null) {
+        document.querySelector("#formWidgetAPI").setAttribute("value", widgetKey)
+    }
+    if (toDoKey != null) {
+        document.querySelector("#formToDoAPI").setAttribute("value", toDoKey)
+    }
+}
+
+function saveSettings() {
+    const widgetKey = document.querySelector("#formWidgetAPI").value
+    const toDoKey = document.querySelector("#formToDoAPI").value
+    
+    localStorage.setItem("widgetKey", widgetKey)
+    localStorage.setItem("toDoKey", toDoKey)
+}
+
 getIpInfo()
 getCityInfo().then(city => getWeatherInfo(city))
 getCurrencyInfo()
 getCameraPicture()
+initiateSettings()
 
+// Eventlisteners
 document.querySelector("#refresh-picture").addEventListener("click", getCameraPicture)
+document.querySelector("#submit-settings").addEventListener("click", saveSettings)
