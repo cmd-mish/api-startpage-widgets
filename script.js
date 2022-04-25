@@ -1,5 +1,4 @@
-async function getIpInfo() {
-    const URL = "https://ipapi.co/json/"
+async function getIpInfo(URL) {
     const resp = await fetch(URL)
     const data = await resp.json()
     
@@ -9,8 +8,7 @@ async function getIpInfo() {
 }
 
 // Informationen om nuvarande ställen fås från API. Om misslyckades ställs in "Helsinki" som default
-async function getCityInfo() {
-    const URL = "https://ipapi.co/json/"
+async function getCityInfo(URL) {
     let userCity = ""
 
     try {
@@ -26,17 +24,21 @@ async function getCityInfo() {
 }
 
 
-async function getWeatherInfo(city) {
-    const URL = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${config.weather_key}&units=metric`
-    const resp = await fetch(URL)
+async function getWeatherInfo(URL, key, city) {
+    const local_URL = `${URL}?q=${city}&appid=${key}&units=metric`
+    const resp = await fetch(local_URL)
     const data = await resp.json()
+    if (data.cod === 401) {
+        console.log("Wrong API key")
+        document.querySelector("#weather-info").innerHTML = "Fel API nyckel"
+    } else {
+        document.querySelector("#weather-pic").innerHTML = `<img src=\"https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png\">`
+        document.querySelector("#weather-info").innerHTML = `${data.main.temp}&deg;C, wind ${data.wind.speed} m/s, ${data.weather[0].description}`
+    }
     
-    document.querySelector("#weather-pic").innerHTML = `<img src=\"https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png\">`
-    document.querySelector("#weather-info").innerHTML = `${data.main.temp}&deg;C, wind ${data.wind.speed} m/s, ${data.weather[0].description}`
 }
 
-async function getCurrencyInfo() {
-    const URL = `https://api.exchangerate.host/latest`
+async function getCurrencyInfo(URL) {
     const resp = await fetch(URL)
     const data = await resp.json()
 
@@ -47,8 +49,7 @@ async function getCurrencyInfo() {
     document.querySelector("#currency-info").innerHTML = currency_html
 }
 
-async function getCameraPicture() {
-    const URL = "https://tie.digitraffic.fi/api/v1/data/camera-data"
+async function getCameraPicture(URL) {
     const resp = await fetch(URL)
     const data = await resp.json()
 
@@ -61,30 +62,45 @@ async function getCameraPicture() {
 }
 
 function initiateSettings() {
-    const widgetKey = localStorage.getItem("widgetKey")
-    const toDoKey = localStorage.getItem("toDoKey")
-    if (widgetKey != null) {
-        document.querySelector("#formWidgetAPI").setAttribute("value", widgetKey)
-    }
-    if (toDoKey != null) {
-        document.querySelector("#formToDoAPI").setAttribute("value", toDoKey)
+    const apiKey = localStorage.getItem("apiKey")
+    if (apiKey != null) {
+        document.querySelector("#formWidgetAPI").setAttribute("value", apiKey)
     }
 }
 
 function saveSettings() {
-    const widgetKey = document.querySelector("#formWidgetAPI").value
-    const toDoKey = document.querySelector("#formToDoAPI").value
-    
-    localStorage.setItem("widgetKey", widgetKey)
-    localStorage.setItem("toDoKey", toDoKey)
+    const apiKey = document.querySelector("#formWidgetAPI").value
+    localStorage.setItem("apiKey", apiKey)
+    location.reload();
 }
 
-getIpInfo()
-getCityInfo().then(city => getWeatherInfo(city))
-getCurrencyInfo()
-getCameraPicture()
+async function getUserData() {
+    const key = localStorage.getItem("apiKey")
+    const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/?key=${key}`
+    const resp = await fetch(URL)
+    const data = await resp.json()
+
+    if (data.error != "invalid api key") {
+        const widgetsObj = JSON.parse(data[0].widgets)
+        const ip_url = widgetsObj.ip.url
+        const weather_url = widgetsObj.weather.url
+        const weather_key = widgetsObj.weather.key
+        const currency_url = widgetsObj.currency.url
+        const picture_url = widgetsObj.picture.url
+
+        getIpInfo(ip_url)
+        getCityInfo(ip_url).then(city => getWeatherInfo(weather_url, weather_key, city))
+        getCurrencyInfo(currency_url)
+        getCameraPicture(picture_url)
+    } else {
+        window.alert("Fel API nyckel")
+    }
+}
+
+
 initiateSettings()
+getUserData()
 
 // Eventlisteners
-document.querySelector("#refresh-picture").addEventListener("click", getCameraPicture)
+document.querySelector("#button-refresh").addEventListener("click", getUserData)
 document.querySelector("#submit-settings").addEventListener("click", saveSettings)
