@@ -92,6 +92,8 @@ async function getUserData() {
         getCityInfo(ip_url).then(city => getWeatherInfo(weather_url, weather_key, city))
         getCurrencyInfo(currency_url)
         getCameraPicture(picture_url)
+
+        document.querySelector("#greeting").innerHTML = `Hejsan, ${data[0].username}!`
     } else {
         window.alert("Fel API nyckel")
     }
