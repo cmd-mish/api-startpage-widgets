@@ -80,7 +80,7 @@ async function getUserData() {
     const resp = await fetch(URL)
     const data = await resp.json()
 
-    if (data.error != "invalid api key") {
+    if (data.error != "invalid api key or the query returned no results") {
         const widgetsObj = JSON.parse(data[0].widgets)
         const ip_url = widgetsObj.ip.url
         const weather_url = widgetsObj.weather.url
@@ -99,10 +99,60 @@ async function getUserData() {
     }
 }
 
+async function sendTestData() {
+    const URL = "https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/"
+    const testData = {
+        user_id: 1,
+        category_id: 1,
+        title: "Test entry",
+        complete: 'false'
+    }
+
+    const resp = await fetch(URL, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': "ink4ze9WT8cKhgG6Wa4F9EbBGTxPG3oA"
+        },
+        body: JSON.stringify(testData)
+    })
+    const respData = await resp.json()
+}
+
+async function getTasks() {
+    const key = localStorage.getItem("apiKey")
+    const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/?key=${key}`
+    const resp = await fetch(URL)
+    const data = await resp.json()
+
+    let tasks_list_html = ""
+
+    for (task of data) {
+        const colorParam = defineColor(task.color)
+        tasks_list_html += `<li class="list-group-item d-flex justify-content-between align-items-center">${task.id}. ${task.title} <span class="badge rounded-pill ${colorParam}">${task.category}</span></li>`
+    }
+
+    document.querySelector("#tasks-list").innerHTML = tasks_list_html
+}
+
+function defineColor(integer) {
+    if (integer == 1) {
+        return "bg-danger"
+    } else if (integer == 2) {
+        return "bg-warning text-dark"
+    } else if (integer == 3) {
+        return "bg-primary"
+    } else {
+        return "bg-secondary"
+    }
+}
+
 
 initiateSettings()
 getUserData()
+getTasks()
 
 // Eventlisteners
 document.querySelector("#button-refresh").addEventListener("click", getUserData)
 document.querySelector("#submit-settings").addEventListener("click", saveSettings)
+document.querySelector("#button-send").addEventListener("click", sendTestData)

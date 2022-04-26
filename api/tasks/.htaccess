@@ -1,0 +1,3 @@
+<Limit GET POST PUT PATCH DELETE OPTIONS>
+    Require all granted
+</Limit>

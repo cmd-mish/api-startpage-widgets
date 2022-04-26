@@ -40,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 
 if (empty($response)) {
   $response = [
-    "error" => "invalid api key"
+    "error" => "invalid api key or the query returned no results"
   ];
 }
 

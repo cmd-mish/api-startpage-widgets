@@ -25,12 +25,28 @@ try {
 
 header("Content-Type: application/json");
 parse_str($_SERVER['QUERY_STRING'], $request_vars);
+
+$request_json = file_get_contents("php://input");
+$request_body = json_decode($request_json); 
+$request_headers = getallheaders();
+
+// Om metoden inte är GET kollar vilken user_id API key har
+if ($_SERVER["REQUEST_METHOD"] != "GET" && isset($request_headers["x-api-key"])) {
+  $key = test_input($request_headers["x-api-key"]);
+  $query = "SELECT id FROM startpage_users WHERE api_key = ?";
+  $stmt = $pdo->prepare($query);
+  $stmt->execute([$key]);
+
+  $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  $global_user_id = $response[0];
+}
+
 $response = [];
 
 if ($_SERVER["REQUEST_METHOD"] == "GET") {
   $key = test_input($request_vars["key"]);
   
-  $query = "SELECT t.title, t.complete, t.due_date, t.created_at, t.updated_at,
+  $query = "SELECT t.id, t.title, t.complete, t.due_date, t.created_at, t.updated_at,
             (SELECT c.name AS category FROM startpage_categories c WHERE c.id = t.category_id),
             (SELECT c.color AS color FROM startpage_categories c WHERE c.id = t.category_id)
             FROM startpage_users u 
@@ -40,11 +56,34 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
   $stmt->execute([$key]);
 
   $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+} else if ($_SERVER["REQUEST_METHOD"] == "POST") {
+  try {
+    $query = "INSERT INTO startpage_tasks 
+                   (user_id, category_id, title, complete) 
+            VALUES (:user_id, :category_id, :title, :complete)";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute([
+      "user_id" => $request_body->user_id,
+      "category_id" => $request_body->category_id,
+      "title" => test_input($request_body->title),
+      "complete" => $request_body->complete
+    ]);
+
+    $response = [
+    "msg" => "saved",
+    "body" => $request_body,
+    "headers" => $request_headers,
+    "uid" => $global_user_id
+    ];
+  } catch (Exception $e) {
+    $response = ["error" => $e, "body" => $request_body];
+  }
 }
 
 if (empty($response)) {
   $response = [
-    "error" => "invalid api key"
+    "error" => "invalid api key or the query returned no results"
   ];
 }
 
