@@ -1,7 +1,7 @@
 async function getIpInfo(URL) {
     const resp = await fetch(URL)
     const data = await resp.json()
-    
+
     let ip_html = `${data.ip}<br>${data.city}, ${data.country_name}`
 
     document.querySelector("#ip-info").innerHTML = ip_html
@@ -35,7 +35,7 @@ async function getWeatherInfo(URL, key, city) {
         document.querySelector("#weather-pic").innerHTML = `<img src=\"https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png\">`
         document.querySelector("#weather-info").innerHTML = `${data.main.temp}&deg;C, wind ${data.wind.speed} m/s, ${data.weather[0].description}`
     }
-    
+
 }
 
 async function getCurrencyInfo(URL) {
@@ -56,7 +56,7 @@ async function getCameraPicture(URL) {
     const cameraN = Math.floor(Math.random() * data.cameraStations.length)
     const cameraP = Math.floor(Math.random() * data.cameraStations[cameraN].cameraPresets.length)
     const pic_url = data.cameraStations[cameraN].cameraPresets[cameraP].imageUrl
-    
+
     let camera_html = `<img src="${pic_url}" class="img-fluid" alt="Vägbild">`
     document.querySelector("#camera-picture").innerHTML = camera_html
 }
@@ -99,40 +99,88 @@ async function getUserData() {
     }
 }
 
-async function sendTestData() {
-    const URL = "https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/"
-    const testData = {
-        user_id: 1,
-        category_id: 1,
-        title: "Test entry",
-        complete: 'false'
-    }
 
-    const resp = await fetch(URL, {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': "ink4ze9WT8cKhgG6Wa4F9EbBGTxPG3oA"
-        },
-        body: JSON.stringify(testData)
-    })
-    const respData = await resp.json()
+async function addTask() {
+    if (document.querySelector("#note-title").value != null) {
+        const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/`
+        const taskObj = {
+            category_id: document.querySelector("#categories-list").value,
+            title: document.querySelector("#note-title").value,
+            complete: 'false'
+        }
+
+        const resp = await fetch(URL, {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': localStorage.getItem("apiKey")
+            },
+            body: JSON.stringify(taskObj)
+        })
+        const respData = await resp.json()
+        getTasks()
+    } else {
+        window.alert("Fyll in text i fältet")
+    }
+}
+
+async function deleteTask(taskID) {
+    if (confirm("Radera noteringen?")) {
+        const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/?id=${taskID}`
+        const resp = await fetch(URL, {
+            method: "DELETE",
+            headers: {'x-api-key': localStorage.getItem("apiKey")}
+        })
+        const respData = await resp.json()
+        getTasks()
+    }
 }
 
 async function getTasks() {
     const key = localStorage.getItem("apiKey")
-    const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/?key=${key}`
+    const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/?key=${key}&content=tasks`
     const resp = await fetch(URL)
     const data = await resp.json()
 
     let tasks_list_html = ""
-
-    for (task of data) {
-        const colorParam = defineColor(task.color)
-        tasks_list_html += `<li class="list-group-item d-flex justify-content-between align-items-center">${task.id}. ${task.title} <span class="badge rounded-pill ${colorParam}">${task.category}</span></li>`
+    if (data.length > 0) {
+        const deleteButtons = []
+        for (task of data) {
+            const colorParam = defineColor(task.color)
+            if (task.complete) {
+                tasks_list_html += `<li class="list-group-item d-flex bd-highlight align-items-center">
+                                        <div class="bd-highlight text-decoration-line-through text-muted">${task.title}</div><div class="badge rounded-pill ${colorParam} ms-2">${task.category}</div><div class="ms-auto bd-highlight"><i class="fa-solid fa-trash" type="button" task-del="${task.id}"></i></div></li>`
+            } else {
+                tasks_list_html += `<li class="list-group-item d-flex bd-highlight align-items-center">
+                                        <div class="bd-highlight">${task.title}</div><div class="badge rounded-pill ${colorParam} ms-2">${task.category}</div><div class="ms-auto bd-highlight"><i class="fa-solid fa-check" id="complete-task-${task.id}"></i></div></li>`
+            }
+        }
+    } else {
+        tasks_list_html = `<li class="list-group-item d-flex justify-content-between align-items-center text-muted ">Inga noteringar</li>`
     }
 
     document.querySelector("#tasks-list").innerHTML = tasks_list_html
+
+    const buttons = document.getElementsByClassName("fa-trash")
+    for (button of buttons) {
+        button.addEventListener("click", (event) => {
+            deleteTask(event.target.attributes["task-del"].value)
+        })
+    }
+}
+
+async function getCategories() {
+    const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/?content=categories`
+    const resp = await fetch(URL)
+    const data = await resp.json()
+
+    let categories_html = ""
+
+    for (category of data) {
+        categories_html += `<option value="${category.id}">${category.name}</option>`
+    }
+
+    document.querySelector("#categories-list").innerHTML = categories_html
 }
 
 function defineColor(integer) {
@@ -151,8 +199,9 @@ function defineColor(integer) {
 initiateSettings()
 getUserData()
 getTasks()
+getCategories()
 
 // Eventlisteners
 document.querySelector("#button-refresh").addEventListener("click", getUserData)
 document.querySelector("#submit-settings").addEventListener("click", saveSettings)
-document.querySelector("#button-send").addEventListener("click", sendTestData)
+document.querySelector("#button-submit-task").addEventListener("click", addTask)
