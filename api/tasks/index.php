@@ -32,7 +32,7 @@ $request_headers = getallheaders();
 
 $request_authorised = false;
 
-// Om metoden inte är GET kollar vilken user_id API key har
+// Om metoden inte är GET kollar vilken user_id API key har och sparar användarens id i $global_user_id
 if ($_SERVER["REQUEST_METHOD"] != "GET" && !empty($request_headers["x-api-key"]) && isset($request_headers["x-api-key"])) {
   $key = test_input($request_headers["x-api-key"]);
   $query = "SELECT id FROM startpage_users WHERE api_key = ?";
@@ -92,10 +92,27 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && test_input($request_vars["content"] =
   }
 } else if ($_SERVER["REQUEST_METHOD"] == "DELETE" && $request_authorised) {
   try {
-    $query = "DELETE FROM startpage_tasks WHERE id = :id";
+    $query = "DELETE FROM startpage_tasks WHERE id = :id AND user_id = :user_id";
     $stmt = $pdo->prepare($query);
-    $stmt->execute(["id" => $request_vars["id"]]);
-    $response = [ "msg" => "DELETED task" . $request_vars['id']];
+    $stmt->execute(["id" => $request_vars["id"], "user_id" => $global_user_id]);
+    $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (!empty($response)) {
+      $response = [ "status" => "Deleted task " . $request_vars['id']];
+    }
+  } catch (Exception $e) {
+    $response = ["error" => $e, "body" => $request_body];
+  }
+} else if ($_SERVER["REQUEST_METHOD"] == "PUT" && $request_authorised) {
+  try {
+    $query = "UPDATE startpage_tasks SET complete = :complete, updated_at = :updated_at WHERE id = :id AND user_id = :user_id";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute(["complete" => $request_vars["complete"], "updated_at" => "now()", "id" => $request_vars["id"], "user_id" => $global_user_id]);
+    $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (!empty($response)) {
+      $response = [ "status" => "Updated task " . $request_vars['id']];
+    }
   } catch (Exception $e) {
     $response = ["error" => $e, "body" => $request_body];
   }
@@ -103,7 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && test_input($request_vars["content"] =
 
 if (empty($response)) {
   $response = [
-    "error" => "invalid api key or the query returned no results"
+    "error" => "unsuccessful request"
   ];
 }
 

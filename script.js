@@ -92,6 +92,8 @@ async function getUserData() {
         getCityInfo(ip_url).then(city => getWeatherInfo(weather_url, weather_key, city))
         getCurrencyInfo(currency_url)
         getCameraPicture(picture_url)
+        getTasks()
+        getCategories()
 
         document.querySelector("#greeting").innerHTML = `Hejsan, ${data[0].username}!`
     } else {
@@ -101,7 +103,7 @@ async function getUserData() {
 
 
 async function addTask() {
-    if (document.querySelector("#note-title").value != null) {
+    if (document.querySelector("#note-title").value != "") {
         const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/`
         const taskObj = {
             category_id: document.querySelector("#categories-list").value,
@@ -119,6 +121,7 @@ async function addTask() {
         })
         const respData = await resp.json()
         getTasks()
+        document.querySelector("#note-title").value = ""
     } else {
         window.alert("Fyll in text i fältet")
     }
@@ -129,11 +132,33 @@ async function deleteTask(taskID) {
         const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/?id=${taskID}`
         const resp = await fetch(URL, {
             method: "DELETE",
-            headers: {'x-api-key': localStorage.getItem("apiKey")}
+            headers: { 'x-api-key': localStorage.getItem("apiKey") }
         })
         const respData = await resp.json()
         getTasks()
     }
+}
+
+async function completeTask(taskID) {
+    if (confirm("Markera noteringen som gjord?")) {
+        const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/?id=${taskID}&complete=true`
+        const resp = await fetch(URL, {
+            method: "PUT",
+            headers: { 'x-api-key': localStorage.getItem("apiKey") }
+        })
+        const respData = await resp.json()
+        getTasks()
+    }
+}
+
+async function restoreTask(taskID) {
+    const URL = `https://cgi.arcada.fi/~popovmik/WDBoCMS/wdbcms22-projekt-1-unholy-overexert/api/tasks/?id=${taskID}&complete=false`
+    const resp = await fetch(URL, {
+        method: "PUT",
+        headers: { 'x-api-key': localStorage.getItem("apiKey") }
+    })
+    const respData = await resp.json()
+    getTasks()
 }
 
 async function getTasks() {
@@ -149,22 +174,36 @@ async function getTasks() {
             const colorParam = defineColor(task.color)
             if (task.complete) {
                 tasks_list_html += `<li class="list-group-item d-flex bd-highlight align-items-center">
-                                        <div class="bd-highlight text-decoration-line-through text-muted">${task.title}</div><div class="badge rounded-pill ${colorParam} ms-2">${task.category}</div><div class="ms-auto bd-highlight"><i class="fa-solid fa-trash" type="button" task-del="${task.id}"></i></div></li>`
+                                        <div class="bd-highlight text-decoration-line-through text-muted">${task.title}</div><div class="badge rounded-pill ${colorParam} ms-2">${task.category}</div><div class="ms-auto bd-highlight"><i class="fa-solid fa-rotate-left" type="button" task-rest="${task.id}"></i><i class="fa-solid fa-trash ms-2" type="button" task-del="${task.id}"></i></div></li>`
             } else {
                 tasks_list_html += `<li class="list-group-item d-flex bd-highlight align-items-center">
-                                        <div class="bd-highlight">${task.title}</div><div class="badge rounded-pill ${colorParam} ms-2">${task.category}</div><div class="ms-auto bd-highlight"><i class="fa-solid fa-check" id="complete-task-${task.id}"></i></div></li>`
+                                        <div class="bd-highlight">${task.title}</div><div class="badge rounded-pill ${colorParam} ms-2">${task.category}</div><div class="ms-auto bd-highlight"><i class="fa-solid fa-check" type="button" task-compl="${task.id}"></i></div></li>`
             }
         }
     } else {
-        tasks_list_html = `<li class="list-group-item d-flex justify-content-between align-items-center text-muted ">Inga noteringar</li>`
+        tasks_list_html = `<li class="list-group-item d-flex bd-highlight align-items-center text-muted ">Inga noteringar</li>`
     }
 
     document.querySelector("#tasks-list").innerHTML = tasks_list_html
 
-    const buttons = document.getElementsByClassName("fa-trash")
-    for (button of buttons) {
+    const deleteButtons = document.getElementsByClassName("fa-trash")
+    for (button of deleteButtons) {
         button.addEventListener("click", (event) => {
             deleteTask(event.target.attributes["task-del"].value)
+        })
+    }
+
+    const completeButtons = document.getElementsByClassName("fa-check")
+    for (button of completeButtons) {
+        button.addEventListener("click", (event) => {
+            completeTask(event.target.attributes["task-compl"].value)
+        })
+    }
+
+    const restoreButtons = document.getElementsByClassName("fa-rotate-left")
+    for (button of restoreButtons) {
+        button.addEventListener("click", (event) => {
+            restoreTask(event.target.attributes["task-rest"].value)
         })
     }
 }
@@ -198,8 +237,6 @@ function defineColor(integer) {
 
 initiateSettings()
 getUserData()
-getTasks()
-getCategories()
 
 // Eventlisteners
 document.querySelector("#button-refresh").addEventListener("click", getUserData)
