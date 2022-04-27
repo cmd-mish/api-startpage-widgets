@@ -35,7 +35,7 @@ $request_authorised = false;
 // Om metoden inte är GET kollar vilken user_id API key har och sparar användarens id i $global_user_id
 if ($_SERVER["REQUEST_METHOD"] != "GET" && !empty($request_headers["x-api-key"]) && isset($request_headers["x-api-key"])) {
   $key = test_input($request_headers["x-api-key"]);
-  $query = "SELECT id FROM startpage_users WHERE api_key = ?";
+  $query = "SELECT id FROM startpage_users WHERE api_key = :api_key";
   $stmt = $pdo->prepare($query);
   $stmt->execute([$key]);
 
@@ -54,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && test_input($request_vars["content"] =
             (SELECT c.color AS color FROM startpage_categories c WHERE c.id = t.category_id)
             FROM startpage_users u 
             INNER JOIN startpage_tasks t ON u.id = t.user_id
-            WHERE u.api_key = ?
+            WHERE u.api_key = :api_key
             ORDER BY t.id";
   $stmt = $pdo->prepare($query);
   $stmt->execute([$key]);
@@ -94,11 +94,11 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && test_input($request_vars["content"] =
   try {
     $query = "DELETE FROM startpage_tasks WHERE id = :id AND user_id = :user_id";
     $stmt = $pdo->prepare($query);
-    $stmt->execute(["id" => $request_vars["id"], "user_id" => $global_user_id]);
+    $stmt->execute(["id" => test_input($request_vars["id"]), "user_id" => $global_user_id]);
     $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (!empty($response)) {
-      $response = [ "status" => "Deleted task " . $request_vars['id']];
+      $response = [ "status" => "Deleted task " . test_input($request_vars['id'])];
     }
   } catch (Exception $e) {
     $response = ["error" => $e, "body" => $request_body];
@@ -107,11 +107,11 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && test_input($request_vars["content"] =
   try {
     $query = "UPDATE startpage_tasks SET complete = :complete, updated_at = :updated_at WHERE id = :id AND user_id = :user_id";
     $stmt = $pdo->prepare($query);
-    $stmt->execute(["complete" => $request_vars["complete"], "updated_at" => "now()", "id" => $request_vars["id"], "user_id" => $global_user_id]);
+    $stmt->execute(["complete" => test_input($request_vars["complete"]), "updated_at" => "now()", "id" => test_input($request_vars["id"]), "user_id" => $global_user_id]);
     $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (!empty($response)) {
-      $response = [ "status" => "Updated task " . $request_vars['id']];
+      $response = [ "status" => "Updated task " . test_input($request_vars['id'])];
     }
   } catch (Exception $e) {
     $response = ["error" => $e, "body" => $request_body];
